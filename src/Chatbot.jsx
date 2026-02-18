@@ -337,7 +337,7 @@ export function Chatbot() {
 
         {/* Chat Area */}
         <Box sx={{ flex: 1, overflow: "hidden" }}>
-          <Chatbox messages={messages} typing={typing} />
+          <Chatbox messages={messages} typing={typing} openingMessage={searchParams.get("opening")} />
         </Box>
 
         {/* Input Area */}
