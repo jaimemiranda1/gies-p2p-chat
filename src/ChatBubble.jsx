@@ -1,19 +1,11 @@
 import { Box, Paper, Typography } from "@mui/material";
-import { produce } from "immer";
-import Typing from "./Typing";
-import React, { useState } from "react";
+import React from "react";
 import Markdown from "react-markdown";
-import Zoom from "react-medium-image-zoom";
-import "react-medium-image-zoom/dist/styles.css";
 
-// CSS for streaming indicator (removed blinking cursor)
-const streamingStyles = {
-  // No visual indicator for streaming - removed blinking cursor
-};
-
-export function ChatBubble({ message, image }) {
+export function ChatBubble({ message }) {
+  // "user" is the person sitting at this computer. "peer" is the other computer.
   const isUser = message.role === "user";
-  
+
   return (
     <Box
       sx={{
@@ -26,7 +18,7 @@ export function ChatBubble({ message, image }) {
       <Paper
         elevation={0}
         sx={{
-          maxWidth: "50%",
+          maxWidth: "70%", // Widened slightly for human text
           px: 2,
           py: 1.5,
           fontSize: "14px",
@@ -39,173 +31,57 @@ export function ChatBubble({ message, image }) {
             boxShadow: "0 2px 6px rgba(0, 0, 0, 0.08)",
           },
           transition: "box-shadow 0.2s ease-in-out",
-          ...(message.isStreaming && streamingStyles),
         }}
         key={message.id}
       >
-        {Array.isArray(message.content) ? (
-          <Box>
-            <Markdown 
-              components={{
-                p: ({ children }) => (
-                  <Typography 
-                    component="p" 
-                    sx={{ 
-                      mb: 1.2, 
-                      lineHeight: 1.5,
-                      fontSize: "14px",
-                      "&:last-child": { mb: 0 }
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                strong: ({ children }) => (
-                  <Typography 
-                    component="span" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: isUser ? "#1976d2" : "#666666"
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                ul: ({ children }) => (
-                  <Box component="ul" sx={{ pl: 1.5, mb: 1.2 }}>
-                    {children}
-                  </Box>
-                ),
-                li: ({ children }) => (
-                  <Typography 
-                    component="li" 
-                    sx={{ 
-                      mb: 0.3,
-                      lineHeight: 1.5,
-                      fontSize: "14px"
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-              }}
-            >
-              {message.content[0]}
-            </Markdown>
-            
-            {image && (
-              <Box sx={{ my: 1.5 }}>
-                <Zoom>
-                  <img 
-                    src="/gies_bot_3_way_match.png" 
-                    style={{ 
-                      width: "100%", 
-                      borderRadius: "6px",
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
-                    }} 
-                    alt="3-way match diagram"
-                  />
-                </Zoom>
+        <Markdown
+          components={{
+            p: ({ children }) => (
+              <Typography
+                component="p"
+                sx={{
+                  mb: 1.2,
+                  lineHeight: 1.5,
+                  fontSize: "14px",
+                  "&:last-child": { mb: 0 },
+                  wordBreak: "break-word"
+                }}
+              >
+                {children}
+              </Typography>
+            ),
+            strong: ({ children }) => (
+              <Typography
+                component="span"
+                sx={{
+                  fontWeight: 600,
+                  color: isUser ? "#1976d2" : "#666666"
+                }}
+              >
+                {children}
+              </Typography>
+            ),
+            ul: ({ children }) => (
+              <Box component="ul" sx={{ pl: 1.5, mb: 1.2 }}>
+                {children}
               </Box>
-            )}
-            
-            <Markdown 
-              components={{
-                p: ({ children }) => (
-                  <Typography 
-                    component="p" 
-                    sx={{ 
-                      mb: 1.2, 
-                      lineHeight: 1.5,
-                      fontSize: "14px",
-                      "&:last-child": { mb: 0 }
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                strong: ({ children }) => (
-                  <Typography 
-                    component="span" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: isUser ? "#1976d2" : "#666666"
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                ul: ({ children }) => (
-                  <Box component="ul" sx={{ pl: 1.5, mb: 1.2 }}>
-                    {children}
-                  </Box>
-                ),
-                li: ({ children }) => (
-                  <Typography 
-                    component="li" 
-                    sx={{ 
-                      mb: 0.3,
-                      lineHeight: 1.5,
-                      fontSize: "14px"
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-              }}
-            >
-              {message.content[1]}
-            </Markdown>
-          </Box>
-        ) : (
-          <Markdown 
-            components={{
-              p: ({ children }) => (
-                <Typography 
-                  component="p" 
-                  sx={{ 
-                    mb: 1.2, 
-                    lineHeight: 1.5,
-                    fontSize: "14px",
-                    "&:last-child": { mb: 0 }
-                  }}
-                >
-                  {children}
-                </Typography>
-              ),
-              strong: ({ children }) => (
-                <Typography 
-                  component="span" 
-                  sx={{ 
-                    fontWeight: 600,
-                    color: isUser ? "#1976d2" : "#666666"
-                  }}
-                >
-                  {children}
-                </Typography>
-              ),
-              ul: ({ children }) => (
-                <Box component="ul" sx={{ pl: 1.5, mb: 1.2 }}>
-                  {children}
-                </Box>
-              ),
-              li: ({ children }) => (
-                <Typography 
-                  component="li" 
-                  sx={{ 
-                    mb: 0.3,
-                    lineHeight: 1.5,
-                    fontSize: "14px"
-                  }}
-                >
-                  {children}
-                </Typography>
-              ),
-            }}
-          >
-            {message.content}
-          </Markdown>
-        )}
+            ),
+            li: ({ children }) => (
+              <Typography
+                component="li"
+                sx={{
+                  mb: 0.3,
+                  lineHeight: 1.5,
+                  fontSize: "14px"
+                }}
+              >
+                {children}
+              </Typography>
+            ),
+          }}
+        >
+          {message.content}
+        </Markdown>
       </Paper>
     </Box>
   );
