@@ -1,16 +1,15 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
-import { Paper, Box, Button, IconButton, Chip, Stack, CircularProgress, Typography, AppBar, Toolbar } from "@mui/material";
+import { Paper, Box, Button, IconButton, Chip, Stack, Typography, AppBar, Toolbar } from "@mui/material";
 import Modal from "@mui/material/Modal";
 import SendIcon from "@mui/icons-material/Send";
 import Chatbox from "./Chatbox";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { CSVLink, CSVDownload } from "react-csv";
-import StopCircleIcon from "@mui/icons-material/StopCircle";
+import { CSVLink } from "react-csv";
 import InputBase from "@mui/material/InputBase";
 import SettingsIcon from "@mui/icons-material/Settings";
 import DownloadIcon from "@mui/icons-material/Download";
-import RemoveMarkdown from "remove-markdown";
+import { io } from "socket.io-client";
 
 const style = {
   position: "absolute",
@@ -24,61 +23,37 @@ const style = {
   borderRadius: 2,
 };
 
-import { context } from "./context";
-console.log(context);
-
 export function Chatbot() {
   let [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const [openFinish, setOpenFinish] = React.useState(false);
+  const [openFinish, setOpenFinish] = useState(false);
   const handleOpenFinish = () => setOpenFinish(true);
   const handleCloseFinish = () => setOpenFinish(false);
-  const [openClear, setOpenClear] = React.useState(false);
+
+  const [openClear, setOpenClear] = useState(false);
   const handleOpenClear = () => setOpenClear(true);
   const handleCloseClear = () => setOpenClear(false);
 
   const [userID, setUserID] = useState("test");
+  const [roomID, setRoomID] = useState("default_room");
   const [messages, setMessages] = useState([]);
-
   const [headers, setHeaders] = useState([]);
   const [startTime, setStartTime] = useState(Date.now());
   const [outputMessages, setOutputMessages] = useState([]);
+  const [typing, setTyping] = useState(false);
+  const [isRoomFull, setIsRoomFull] = useState(false);
 
-  const controller = new AbortController();
-  const [typing, setTyping] = React.useState(false);
-  const [questionCount, setQuestionCount] = React.useState(1);
-  
-  // Add model loading state
-  const [isModelLoading, setIsModelLoading] = useState(true);
-  
-  // Model warming function
-  const warmModel = async () => {
-    try {
-      const response = await fetch("http://localhost:1234/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: "Hello" }],
-          temperature: 0.7,
-          max_tokens: 10, // Very short response for warming
-          stream: false,
-        }),
-      });
-      
-      if (response.ok) {
-        console.log("Model warmed successfully");
-      }
-    } catch (error) {
-      console.error("Model warming failed:", error);
-    } finally {
-      setIsModelLoading(false);
-    }
+  // Socket reference
+  const socketRef = useRef(null);
+
+  // Generates Q1, A1, Q2, A2 based on message index to satisfy the Wide Format CSV
+  const getQAVar = (index) => {
+    const isQuestion = index % 2 === 0;
+    const number = Math.floor(index / 2) + 1;
+    return isQuestion ? `Q${number}` : `A${number}`;
   };
-  
+
   const getData = () => {
     var output = {
       ParticipantID: userID,
@@ -89,7 +64,7 @@ export function Chatbot() {
       { label: "TimeStart", key: "TimeStart" },
     ];
 
-    messages.map((mes) => {
+    messages.forEach((mes) => {
       output[`Time${mes.var}`] = mes.id;
       output[mes.var] = mes.content.replace(/\"/g, '""');
       headersTemp = [
@@ -98,174 +73,121 @@ export function Chatbot() {
         { label: mes.var, key: mes.var },
       ];
     });
+
     output["TimeEnd"] = Date.now();
     headersTemp = [...headersTemp, { label: "TimeEnd", key: "TimeEnd" }];
     setOutputMessages([output]);
     setHeaders(headersTemp);
   };
 
-  React.useEffect(() => {
-    console.log(`${userID}`);
-    let saved = localStorage.getItem(`${userID}`);
-
+  useEffect(() => {
+    // Set Storage Key as a combination of userID and roomID
+    const storageKey = `${userID}_${roomID}`;
+    let saved = localStorage.getItem(storageKey);
     if (messages.length !== 0 && saved) {
       let savedState = JSON.parse(saved);
-      console.log(savedState);
       savedState.messages = messages;
-      localStorage.setItem(`${userID}`, JSON.stringify(savedState));
-      console.log("updated ", savedState);
+      localStorage.setItem(storageKey, JSON.stringify(savedState));
     }
-  }, [messages]);
+  }, [messages, userID, roomID]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const tempID = searchParams.get("id");
-    
-    // If no user ID in URL, redirect to default
+    const tempRoom = searchParams.get("room") || "default_room";
+
     if (!tempID) {
-      navigate("/?id=test", { replace: true });
+      navigate("/?id=test&room=Pair1", { replace: true });
       return;
     }
-    
-    // Set userID and load data
+
     setUserID(tempID);
-    
-    let saved = localStorage.getItem(`${tempID}`);
-    console.log("saved", saved);
+    setRoomID(tempRoom);
+
+    // Initialize Local Storage State
+    const storageKey = `${tempID}_${tempRoom}`;
+    let saved = localStorage.getItem(storageKey);
     if (saved == null) {
       let savedState = {
         startTime: Date.now(),
         userID: tempID,
         messages: [],
       };
-
-      localStorage.setItem(`${tempID}`, JSON.stringify(savedState));
+      localStorage.setItem(storageKey, JSON.stringify(savedState));
       setStartTime(savedState.startTime);
       setMessages([]);
     } else {
       const savedState = JSON.parse(saved);
-      console.log(savedState);
       setStartTime(savedState.startTime);
       setMessages(savedState.messages || []);
     }
-    
-    // Warm the model on page load
-    warmModel();
+
+    // Initialize Socket.io
+    // This tells the browser: "Connect to port 3000 on whatever IP address you are currently visiting"
+    socketRef.current = io(`http://${window.location.hostname}:3000`);
+
+    socketRef.current.emit("join_room", { room: tempRoom, userId: tempID });
+
+    // Catch the "Room Full" event from the server
+    socketRef.current.on("room_full", () => {
+      setIsRoomFull(true);
+    });
+
+    // Listen for incoming messages
+    socketRef.current.on("receive_message", (data) => {
+      setMessages((prev) => {
+        const nextVar = getQAVar(prev.length);
+        return [...prev, {
+          role: "peer",
+          content: data.message,
+          id: data.timestamp,
+          var: nextVar
+        }];
+      });
+    });
+
+    // Listen for clear chat command from the other computer
+    socketRef.current.on("clear_chat_broadcast", () => {
+      localStorage.removeItem(storageKey);
+      setMessages([]);
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socketRef.current.disconnect();
+    };
   }, [searchParams, navigate]);
 
-  const getResponse = async (message) => {
-    setTyping(true);
-    const newChat = [
-      ...messages,
-      {
-        role: "user",
-        content: message,
-        id: Date.now(),
-        var: `Q${questionCount}`,
-      },
-    ];
-    setMessages(newChat);
-    
-    // Add a placeholder message for the assistant response
-    const assistantMessageId = Date.now() + 1;
-    const assistantMessage = {
-      content: "",
-      role: "assistant",
-      id: assistantMessageId,
-      var: `A${questionCount}`,
-      isStreaming: true,
+  const sendMessage = (messageText) => {
+    if (!messageText.trim()) return;
+
+    const timestamp = Date.now();
+    const nextVar = getQAVar(messages.length);
+
+    const newMsg = {
+      role: "user",
+      content: messageText,
+      id: timestamp,
+      var: nextVar,
     };
-    
-    setMessages(prev => [...prev, assistantMessage]);
 
-    try {
-      const response = await fetch("http://localhost:1234/v1/chat/completions", {
-        signal: controller.signal,
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
-        body: JSON.stringify({
-          messages: [/* { role: "assistant", content: context }, */ ...newChat],
-          temperature: 0.7,
-          max_tokens: -1,
-          stream: true, // Enable streaming
-        }),
-      });
+    // Update local UI
+    setMessages((prev) => [...prev, newMsg]);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    // Send to peer
+    socketRef.current.emit("send_message", {
+      room: roomID,
+      message: messageText,
+      timestamp: timestamp,
+      senderId: userID
+    });
+  };
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            
-            if (data === '[DONE]') {
-              // Stream is complete
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === assistantMessageId 
-                    ? { ...msg, isStreaming: false }
-                    : msg
-                )
-              );
-              setTyping(false);
-              setQuestionCount((prevState) => prevState + 1);
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content) {
-                const content = parsed.choices[0].delta.content;
-                
-                // Update the message content in real-time
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === assistantMessageId 
-                      ? { ...msg, content: msg.content + content }
-                      : msg
-                  )
-                );
-              }
-            } catch (e) {
-              console.error('Error parsing stream data:', e);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Streaming error:', error);
-      setTyping(false);
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { 
-                ...msg, 
-                content: "Whoops. looks like something went wrong.",
-                isStreaming: false 
-              }
-            : msg
-        )
-      );
-      setQuestionCount((prevState) => prevState + 1);
-    }
+  const handleClearChat = () => {
+    const storageKey = `${userID}_${roomID}`;
+    localStorage.removeItem(storageKey);
+    setMessages([]);
+    socketRef.current.emit("clear_chat", { room: roomID });
+    handleCloseClear();
   };
 
   return (
@@ -278,94 +200,69 @@ export function Chatbot() {
         bgcolor: "#ffffff",
       }}
     >
-      <Paper
-        elevation={0}
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          width: "100%",
-          height: "100%",
-          borderRadius: 0,
-          overflow: "hidden",
-          bgcolor: "white",
-          border: "1px solid #e0e0e0",
-        }}
-      >
-        {/* Header */}
-        <AppBar 
-          position="static" 
-          elevation={0}
-          sx={{ 
-            bgcolor: "#ffffff",
-            borderBottom: "1px solid #f0f0f0"
-          }}
-        >
-          <Toolbar sx={{ justifyContent: "space-between", minHeight: "64px" }}>
-            <Typography variant="h6" sx={{ fontWeight: 500, color: "#333333" }}>
-              ChatBot
-            </Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleOpenFinish}
-                sx={{
-                  borderColor: "#e0e0e0",
-                  color: "#666666",
-                  textTransform: "none",
-                  "&:hover": {
-                    borderColor: "#cccccc",
-                    bgcolor: "#fafafa"
-                  }
-                }}
-                startIcon={<DownloadIcon sx={{ fontSize: 18 }} />}
-              >
-                Export
-              </Button>
-              <IconButton 
-                onClick={handleOpenClear}
-                sx={{ 
-                  color: "#666666",
-                  "&:hover": { bgcolor: "#f5f5f5" }
-                }}
-              >
-                <SettingsIcon />
-              </IconButton>
-            </Box>
-          </Toolbar>
-        </AppBar>
-
-        {/* Chat Area */}
-        <Box sx={{ flex: 1, overflow: "hidden" }}>
-          <Chatbox messages={messages} typing={typing} openingMessage={searchParams.get("opening")} />
+      {isRoomFull ? (
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%" }}>
+          <Typography variant="h4" color="error" sx={{ mb: 2 }}>Room is Full</Typography>
+          <Typography variant="body1" color="text.secondary">
+            Two participants are already connected to Room {roomID}. Please check your assignment or wait for a space to open.
+          </Typography>
         </Box>
-
-        {/* Input Area */}
-        <Box
+      ) : (
+        <Paper
+          elevation={0}
           sx={{
-            p: 2,
-            borderTop: "1px solid #f0f0f0",
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            height: "100%",
+            borderRadius: 0,
+            overflow: "hidden",
             bgcolor: "white",
+            border: "1px solid #e0e0e0",
           }}
         >
-          {isModelLoading ? (
-            <Paper
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "#fafafa",
-                border: "1px solid #f0f0f0",
-              }}
-            >
-              <CircularProgress size={20} sx={{ mr: 2, color: "#666666" }} />
-              <Typography variant="body2" color="#666666" sx={{ fontWeight: 400 }}>
-                Model loading...
+          <AppBar
+            position="static"
+            elevation={0}
+            sx={{
+              bgcolor: "#ffffff",
+              borderBottom: "1px solid #f0f0f0"
+            }}
+          >
+            <Toolbar sx={{ justifyContent: "space-between", minHeight: "64px" }}>
+              <Typography variant="h6" sx={{ fontWeight: 500, color: "#333333" }}>
+                Live Chat - Room: {roomID}
               </Typography>
-            </Paper>
-          ) : (
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={handleOpenFinish}
+                  sx={{
+                    borderColor: "#e0e0e0",
+                    color: "#666666",
+                    textTransform: "none",
+                    "&:hover": { borderColor: "#cccccc", bgcolor: "#fafafa" }
+                  }}
+                  startIcon={<DownloadIcon sx={{ fontSize: 18 }} />}
+                >
+                  Export
+                </Button>
+                <IconButton
+                  onClick={handleOpenClear}
+                  sx={{ color: "#666666", "&:hover": { bgcolor: "#f5f5f5" } }}
+                >
+                  <SettingsIcon />
+                </IconButton>
+              </Box>
+            </Toolbar>
+          </AppBar>
+
+          <Box sx={{ flex: 1, overflow: "hidden" }}>
+            <Chatbox messages={messages} typing={typing} />
+          </Box>
+
+          <Box sx={{ p: 2, borderTop: "1px solid #f0f0f0", bgcolor: "white" }}>
             <Paper
               component="form"
               elevation={0}
@@ -376,208 +273,81 @@ export function Chatbot() {
                 alignItems: "center",
                 bgcolor: "#fafafa",
                 border: "1px solid #e0e0e0",
-                "&:hover": {
-                  border: "1px solid #cccccc",
-                },
-                "&:focus-within": {
-                  border: "1px solid #999999",
-                  bgcolor: "white",
-                },
-                transition: "all 0.2s ease-in-out",
+                "&:focus-within": { border: "1px solid #999999", bgcolor: "white" },
+              }}
+              onSubmit={(ev) => {
+                ev.preventDefault();
+                const input = ev.target.elements.chatInput;
+                sendMessage(input.value);
+                input.value = "";
               }}
             >
-              <IconButton 
-                sx={{ 
-                  p: "6px", 
-                  color: "#999999",
-                  "&:hover": { color: "#666666" },
-                  "&:disabled": { color: "#e0e0e0" }
-                }}
-                aria-label="stop"
-                onClick={() => {
-                  controller.abort();
-                  setMessages(prev => 
-                    prev.map(msg => 
-                      msg.isStreaming 
-                        ? { ...msg, isStreaming: false }
-                        : msg
-                    )
-                  );
-                  setTyping(false);
-                }}
-                disabled={!messages.some(msg => msg.isStreaming)}
-              >
-                <StopCircleIcon sx={{ fontSize: 20 }} />
-              </IconButton>
               <InputBase
-                sx={{ 
-                  ml: 1, 
-                  flex: 1,
-                  fontSize: "15px",
-                  color: "#333333",
-                  "& .MuiInputBase-input": {
-                    padding: "8px 0",
-                  },
-                  "& .MuiInputBase-input::placeholder": {
-                    color: "#999999",
-                    opacity: 1,
-                  }
+                name="chatInput"
+                sx={{
+                  ml: 1, flex: 1, fontSize: "15px", color: "#333333"
                 }}
                 placeholder="Type your message..."
                 multiline
                 maxRows={4}
-                inputProps={{}}
-                disabled={isModelLoading}
                 onKeyDown={(ev) => {
-                  if (ev.key === "Enter" && !isModelLoading && !ev.shiftKey) {
+                  if (ev.key === "Enter" && !ev.shiftKey) {
                     ev.preventDefault();
-                    if (ev.target.value.trim()) {
-                      getResponse(ev.target.value);
-                      ev.target.value = "";
-                    }
+                    sendMessage(ev.target.value);
+                    ev.target.value = "";
                   }
                 }}
               />
-              <IconButton 
-                sx={{ 
-                  p: "6px",
-                  color: "#666666",
-                  "&:hover": { 
-                    bgcolor: "#f0f0f0",
-                    color: "#333333"
-                  },
-                  "&:disabled": {
-                    color: "#e0e0e0"
-                  }
-                }} 
-                aria-label="send"
-                disabled={isModelLoading}
-                onClick={(ev) => {
-                  const input = ev.target.closest('form').querySelector('input, textarea');
-                  if (input && input.value.trim()) {
-                    getResponse(input.value);
-                    input.value = "";
-                  }
-                }}
-              >
+              <IconButton type="submit" sx={{ p: "6px", color: "#666666" }}>
                 <SendIcon sx={{ fontSize: 20 }} />
               </IconButton>
             </Paper>
-          )}
-        </Box>
-      </Paper>
+          </Box>
+        </Paper>
+      )}
 
-      <Modal
-        open={openFinish}
-        onClose={handleCloseFinish}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
+      {/* Export Modal */}
+      <Modal open={openFinish} onClose={handleCloseFinish}>
         <Box sx={style}>
-          <Typography
-            id="modal-modal-title"
-            variant="h6"
-            component="h2"
-            sx={{ mb: 3, fontWeight: 500, color: "#333333" }}
-          >
-            Export Results
-          </Typography>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 500 }}>Export Results</Typography>
           <Stack spacing={2}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2" color="#666666">User ID:</Typography>
-              <Chip 
-                label={userID} 
-                size="small"
-                sx={{ 
-                  bgcolor: "#f5f5f5", 
-                  color: "#666666",
-                  fontWeight: 400
-                }} 
-              />
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Typography variant="body2">User ID:</Typography>
+              <Chip label={userID} size="small" />
             </Box>
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: "#f8f9fa",
-                p: 2,
-                color: "#666666",
-                borderRadius: 2,
-                border: "1px solid #e0e0e0",
-                "&:hover": { 
-                  bgcolor: "#f0f0f0",
-                  border: "1px solid #cccccc"
-                },
-                transition: "all 0.2s",
-                cursor: "pointer",
+                display: "flex", justifyContent: "center", bgcolor: "#f8f9fa", p: 2,
+                borderRadius: 2, border: "1px solid #e0e0e0", cursor: "pointer",
               }}
             >
               <CSVLink
                 data={outputMessages}
                 asyncOnClick={true}
-                filename={`${userID}.csv`}
-                style={{
-                  color: "inherit",
-                  textDecoration: "none",
-                  fontWeight: 400,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                }}
+                filename={`${userID}_transcript.csv`}
+                style={{ color: "inherit", textDecoration: "none", display: "flex", gap: "8px" }}
                 onClick={getData}
                 headers={headers}
-                enclosingCharacter={`"`}
-                target="_blank"
               >
-                <DownloadIcon sx={{ fontSize: 20 }} />
-                Download Results
+                <DownloadIcon /> Download CSV
               </CSVLink>
             </Box>
           </Stack>
         </Box>
       </Modal>
 
+      {/* Clear Settings Modal */}
       <Modal open={openClear} onClose={handleCloseClear}>
         <Box sx={style}>
-          <Typography variant="h6" component="h2" sx={{ mb: 3, fontWeight: 500, color: "#333333" }}>
-            Settings
-          </Typography>
+          <Typography variant="h6" sx={{ mb: 3, fontWeight: 500 }}>Settings</Typography>
           <Stack spacing={3}>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2" color="#666666">User ID:</Typography>
-              <Chip 
-                label={userID} 
-                size="small"
-                sx={{ 
-                  bgcolor: "#f5f5f5", 
-                  color: "#666666",
-                  fontWeight: 400
-                }} 
-              />
-            </Box>
-            
             <Button
               variant="outlined"
               color="error"
-              onClick={() => {
-                localStorage.clear();
-                setMessages([]);
-                handleCloseClear();
-              }}
-              sx={{
-                borderRadius: 2,
-                py: 1,
-                fontWeight: 400,
-                borderColor: "#ffcdd2",
-                color: "#d32f2f",
-                "&:hover": {
-                  borderColor: "#ef5350",
-                  bgcolor: "#ffebee"
-                }
-              }}
+              onClick={handleClearChat}
+              sx={{ borderRadius: 2, py: 1 }}
             >
-              Clear History
+              Clear History for Both Users
             </Button>
           </Stack>
         </Box>
@@ -585,4 +355,3 @@ export function Chatbot() {
     </Box>
   );
 }
-
