@@ -23,7 +23,7 @@ const style = {
   borderRadius: 2,
 };
 
-export function Chatbot() {
+export function Chat() {
   let [searchParams] = useSearchParams();
   const navigate = useNavigate();
 

@@ -1,4 +1,4 @@
-import { Chatbot } from "./Chatbot";
+import { Chat } from "./Chat";
 import React, { useState, useCallback } from "react";
 import "./App.css";
 import { Paper, Box } from "@mui/material";
@@ -21,7 +21,7 @@ function App() {
       <CssBaseline />
 
       <Routes>
-        <Route path="/" element={<Chatbot />} />
+        <Route path="/" element={<Chat />} />
       </Routes>
     </ThemeProvider>
   );
