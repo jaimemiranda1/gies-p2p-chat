@@ -18,6 +18,9 @@ const io = new Server(server, {
   }
 });
 
+// Temporary memory cache for rooms
+const roomMessageCache = {}
+
 // Listen for incoming WebSocket connections
 io.on("connection", (socket) => {
   console.log(`🔌 New Connection: ${socket.id}`);
@@ -38,11 +41,24 @@ io.on("connection", (socket) => {
 
     socket.join(data.room);
     console.log(`👤 User [${data.userId}] joined room: [${data.room}] (Current occupants: ${numClients + 1})`);
+
+    // If this room has a chat history, send it to the person who just joined
+    if (roomMessageCache[data.room]) {
+      socket.emit("load_history", roomMessageCache[data.room]);
+    }
+
   });
 
   // Handle incoming messages
   socket.on("send_message", (data) => {
     console.log(`💬 Message in [${data.room}] from [${data.senderId}]`);
+
+    // Save the message to the server's memory
+    if (!roomMessageCache[data.room]) {
+      roomMessageCache[data.room] = [];
+    }
+    roomMessageCache[data.room].push(data);
+
     // broadcast 'receive_message' to everyone in the room EXCEPT the sender
     socket.to(data.room).emit("receive_message", data);
   });
@@ -50,6 +66,10 @@ io.on("connection", (socket) => {
   // Handle clearing the chat
   socket.on("clear_chat", (data) => {
     console.log(`🧹 Chat cleared in room: [${data.room}]`);
+
+    // Wipe the server's memory when they clear the chat
+    roomMessageCache[data.room] = [];
+
     socket.to(data.room).emit("clear_chat_broadcast");
   });
 

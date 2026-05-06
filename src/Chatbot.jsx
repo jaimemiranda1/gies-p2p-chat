@@ -132,6 +132,18 @@ export function Chatbot() {
       setIsRoomFull(true);
     });
 
+    // Load missed messages from the server when joining
+    socketRef.current.on("load_history", (historyArray) => {
+      // Map the server's raw data back into the Q1/A1 format the UI expects
+      const formattedHistory = historyArray.map((msg, index) => ({
+        role: msg.senderId === tempID ? "user" : "peer",
+        content: msg.message,
+        id: msg.timestamp,
+        var: getQAVar(index)
+      }));
+      setMessages(formattedHistory);
+    });
+
     // Listen for incoming messages
     socketRef.current.on("receive_message", (data) => {
       setMessages((prev) => {
@@ -231,7 +243,7 @@ export function Chatbot() {
           >
             <Toolbar sx={{ justifyContent: "space-between", minHeight: "64px" }}>
               <Typography variant="h6" sx={{ fontWeight: 500, color: "#333333" }}>
-                Live Chat - Room: {roomID}
+                Chat
               </Typography>
               <Box sx={{ display: "flex", gap: 1 }}>
                 <Button
