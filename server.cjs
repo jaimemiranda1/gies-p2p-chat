@@ -2,11 +2,20 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
 // Enable CORS: Allows the React frontend to communicate with the server
 app.use(cors());
+
+// Serve the static files from the React build
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Catch-all: Route any other URL back to the React index page
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+});
 
 const server = http.createServer(app);
 
