@@ -1,4 +1,5 @@
 #!/bin/bash
+echo echo -n -e "\033]2;Gies P2P Chat Setup\007"
 echo "Checking system requirements..."
 
 # Check if Node is installed

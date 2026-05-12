@@ -1,5 +1,5 @@
 @echo off
-title Chat Environment Setup
+title Gies P2P Chat Setup
 echo Checking system requirements...
 
 :: Check if Node is installed
