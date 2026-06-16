@@ -41,6 +41,12 @@ Because this application acts as a handoff from a survey tool, the React fronten
 
 ---
 
+## Creating Static Files for Deployment
+
+Run `npm run build` within the `gies-p2p-chat` folder to build, or rebuild, the necessary static files for the `start-server` script. 
+
+---
+
 ## Client Deployment (Production)
 
 ### First-Time Environment Setup
@@ -50,10 +56,12 @@ Because this application acts as a handoff from a survey tool, the React fronten
 2. Locate and open the project folder &rarr; **gies-p2p-chat**
 3. Navigate to the `Windows Scripts` or `Mac Scripts` folder (depending on the **host** computer's OS).
 4. Double-click the `setup` script.
+    - <span style="color:red">**Note for Mac Users:**</span> You may need to grant the script permission to run by typing `chmod +x setup.command` in your terminal first.
 5. A terminal window will open, automatically install the required dependencies, and compile the production build. Once it says "Setup Complete!" you can close the window.
 
 ### Start Server
 
 1. Navigate to the `Windows Scripts` or `Mac Scripts` folder.
 2. Double-click the `start-server` script.
+    - <span style="color:red">**Note for Mac Users:**</span> You may need to grant the script permission to run by typing `chmod +x start-server.command` in your terminal first.
 3. Leave this terminal window open in the background. The server is now routing messages!
