@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const os = require('os');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
@@ -16,6 +17,20 @@ app.use(express.static(path.join(__dirname, 'dist')));
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
+
+// Find the computer's Local IP Address
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Skip non-IPv4 and internal (localhost) addresses
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 const server = http.createServer(app);
 
@@ -91,5 +106,12 @@ io.on("connection", (socket) => {
 // Boot up the server on Port 3000
 const PORT = 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Chat Router Server running on http://localhost:${PORT}`);
+  // Get IP Address
+  const networkIp = getLocalIpAddress();
+
+  // Console Logs
+  console.log(`\n🚀 Gies P2P Chat Server Active!`)
+  console.log(`💻 Local Machine:  http://localhost:${PORT}`);
+  console.log(`🌐 Network URL:    http://${networkIp}:${PORT}`)
+  console.log(`----------------------------------------------\n`);
 });
