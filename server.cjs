@@ -39,7 +39,10 @@ const io = new Server(server, {
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
-  }
+  },
+  // Aggressive heartbeat to instantly drop ghost connections
+  pingTimeout: 5000,
+  pingInterval: 1000
 });
 
 // Temporary memory cache for rooms
