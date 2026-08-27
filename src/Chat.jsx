@@ -96,7 +96,9 @@ export function Chat() {
     const tempRoom = searchParams.get("room") || "default_room";
 
     if (!tempID) {
-      navigate("/?id=test&room=Pair1", { replace: true });
+      // Generate a random 4-digit number for the test ID
+      const randomId = Math.floor(Math.random() * 10000);
+      navigate(`/?id=User${randomId}&room=Pair1`, { replace: true });
       return;
     }
 
