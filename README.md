@@ -49,8 +49,8 @@ Run `npm run build` within the `gies-p2p-chat` folder to build, or rebuild, the 
 
 ## Client Deployment (Production)
 
-### First-Time Environment Setup
-> ⚠️ This needs to be done only **once** per **host** computer!
+### Environment & Update Setup
+> ⚠️ This setup script must be run the **first time** you configure a host computer, AND **every time you pull a new update** from GitHub.
 
 1. Ensure [Node.js](#prerequisites) is installed on the **Host** computer.
 2. Locate and open the project folder &rarr; **gies-p2p-chat**
