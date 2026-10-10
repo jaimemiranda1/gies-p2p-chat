@@ -7,3 +7,13 @@
 1. Chat Archive folder will be created if it doesn't exist.
 2. A folder for today will be created, if it doesn't exist, to save all of today's chat here.
 3. There will be 2 backups: a master ledger that contains all the messages from all users on all chats (master_chat_backup) and a by pair backup (pairName_backup)
+[10/10/2026, 2:00:26 PM] Room: Pair1 | User: User7851 | Message: Testing connection from User7851
+[10/10/2026, 2:00:52 PM] Room: Pair1 | User: User7852 | Message: Confirming connection by User7852
+[10/10/2026, 2:01:32 PM] Room: Pair1 | User: User7851 | Message: User7852 has been diconnected
+[10/10/2026, 2:04:29 PM] Room: Pair2 | User: User1111 | Message: Verifying connection to User2222
+[10/10/2026, 2:04:57 PM] Room: Pair2 | User: User2222 | Message: Message received by User1111. Confirming connection.
+[10/10/2026, 2:05:26 PM] Room: Pair2 | User: User2222 | Message: Toggling airplane to simulate connection lost.
+[10/10/2026, 2:05:48 PM] Room: Pair2 | User: User1111 | Message: Airplane mode has been triggered from User1111's device
+[10/10/2026, 2:06:12 PM] Room: Pair2 | User: User1111 | Message: Confirming User1111 did not receive the prior message nor this one
+[10/10/2026, 2:06:42 PM] Room: Pair2 | User: User1111 | Message: User1111 will now turn airplane mode off and verify if messages are lost or received on reconnection
+[10/10/2026, 2:07:05 PM] Room: Pair2 | User: User2222 | Message: Confirming that messages were successfully received upon reconnection

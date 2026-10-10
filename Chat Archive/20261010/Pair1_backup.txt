@@ -1,2 +1,5 @@
 [10/10/2026, 1:23:31 PM] Room: Pair1 | User: User1478 | Message: Testing local save
 [10/10/2026, 1:24:26 PM] Room: Pair1 | User: User1478 | Message: The "Chat Archive" folder was created when the first message was sent
+[10/10/2026, 2:00:26 PM] Room: Pair1 | User: User7851 | Message: Testing connection from User7851
+[10/10/2026, 2:00:52 PM] Room: Pair1 | User: User7852 | Message: Confirming connection by User7852
+[10/10/2026, 2:01:32 PM] Room: Pair1 | User: User7851 | Message: User7852 has been diconnected

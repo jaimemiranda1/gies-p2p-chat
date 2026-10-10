@@ -1,3 +1,10 @@
 [10/10/2026, 1:24:58 PM] Room: Pair2 | User: User1478 | Message: Testing the local save with another pair 
 [10/10/2026, 1:25:31 PM] Room: Pair2 | User: User1478 | Message: The master contains all messages from all pairs, and the pair backups contains the messages of that pair
 [10/10/2026, 1:25:45 PM] Room: Pair2 | User: User1478 | Message: Seems to be working as intended. Awesome!
+[10/10/2026, 2:04:29 PM] Room: Pair2 | User: User1111 | Message: Verifying connection to User2222
+[10/10/2026, 2:04:57 PM] Room: Pair2 | User: User2222 | Message: Message received by User1111. Confirming connection.
+[10/10/2026, 2:05:26 PM] Room: Pair2 | User: User2222 | Message: Toggling airplane to simulate connection lost.
+[10/10/2026, 2:05:48 PM] Room: Pair2 | User: User1111 | Message: Airplane mode has been triggered from User1111's device
+[10/10/2026, 2:06:12 PM] Room: Pair2 | User: User1111 | Message: Confirming User1111 did not receive the prior message nor this one
+[10/10/2026, 2:06:42 PM] Room: Pair2 | User: User1111 | Message: User1111 will now turn airplane mode off and verify if messages are lost or received on reconnection
+[10/10/2026, 2:07:05 PM] Room: Pair2 | User: User2222 | Message: Confirming that messages were successfully received upon reconnection
