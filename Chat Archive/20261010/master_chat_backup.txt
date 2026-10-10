@@ -1,0 +1,9 @@
+[10/10/2026, 1:23:31 PM] Room: Pair1 | User: User1478 | Message: Testing local save
+[10/10/2026, 1:24:26 PM] Room: Pair1 | User: User1478 | Message: The "Chat Archive" folder was created when the first message was sent
+[10/10/2026, 1:24:58 PM] Room: Pair2 | User: User1478 | Message: Testing the local save with another pair 
+[10/10/2026, 1:25:31 PM] Room: Pair2 | User: User1478 | Message: The master contains all messages from all pairs, and the pair backups contains the messages of that pair
+[10/10/2026, 1:25:45 PM] Room: Pair2 | User: User1478 | Message: Seems to be working as intended. Awesome!
+[10/10/2026, 1:28:23 PM] Room: Pair3 | User: User3754 | Message: The backups will be saved like this:
+1. Chat Archive folder will be created if it doesn't exist.
+2. A folder for today will be created, if it doesn't exist, to save all of today's chat here.
+3. There will be 2 backups: a master ledger that contains all the messages from all users on all chats (master_chat_backup) and a by pair backup (pairName_backup)

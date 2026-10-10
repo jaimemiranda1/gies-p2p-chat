@@ -1,0 +1,3 @@
+[10/10/2026, 1:24:58 PM] Room: Pair2 | User: User1478 | Message: Testing the local save with another pair 
+[10/10/2026, 1:25:31 PM] Room: Pair2 | User: User1478 | Message: The master contains all messages from all pairs, and the pair backups contains the messages of that pair
+[10/10/2026, 1:25:45 PM] Room: Pair2 | User: User1478 | Message: Seems to be working as intended. Awesome!
