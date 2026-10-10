@@ -4,6 +4,7 @@ const os = require('os');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -79,6 +80,41 @@ io.on("connection", (socket) => {
   // Handle incoming messages
   socket.on("send_message", (data) => {
     console.log(`💬 Message in [${data.room}] from [${data.senderId}]`);
+
+    // Generate a YYYYMMDD folder name based on the message timestamp
+    const msgDate = new Date(data.timestamp);
+    const year = msgDate.getFullYear();
+    const month = String(msgDate.getMonth() + 1).padStart(2, '0');
+    const day = String(msgDate.getDate()).padStart(2, '0');
+    const dateFolderName = `${year}${month}${day}`; // e.g., "20261010"
+
+    // Define the path for the chat arhive: e.g. /Chat Archive/20261010
+    const archiveDirPath = path.join(__dirname, 'Chat Archive', dateFolderName);
+
+    // Confirm the folder exists. If it doesn't, create it, and then save the files
+    fs.mkdir(archiveDirPath, { recursive: true }, (err) => {
+      if (err) {
+        console.error("⚠️ Failed to create archive folders:", err);
+        return;
+      }
+
+      // Format the entry text
+      const logEntry = `[${msgDate.toLocaleString()}] Room: ${data.room} | User: ${data.senderId} | Message: ${data.message}\n`;
+
+      // Define the two separate file paths
+      const masterFilePath = path.join(archiveDirPath, 'master_chat_backup.txt');
+      const roomFilePath = path.join(archiveDirPath, `${data.room}_backup.txt`);
+
+      // Append to the Master Ledger
+      fs.appendFile(masterFilePath, logEntry, (err) => {
+        if (err) console.error("⚠️ Failed to write master backup:", err);
+      });
+
+      // Append to the Room-Specific File
+      fs.appendFile(roomFilePath, logEntry, (err) => {
+        if (err) console.error(`⚠️ Failed to write ${data.room} backup:`, err);
+      });
+    });
 
     // Save the message to the server's memory
     if (!roomMessageCache[data.room]) {
