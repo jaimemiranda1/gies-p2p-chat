@@ -42,8 +42,8 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   },
   // Aggressive heartbeat to instantly drop ghost connections
-  pingTimeout: 5000,
-  pingInterval: 1000
+  // pingTimeout: 5000,
+  // pingInterval: 1000
 });
 
 // Temporary memory cache for rooms
@@ -55,9 +55,23 @@ io.on("connection", (socket) => {
 
   // Handle joining a specific room (Pair1, Pair2, etc.)
   socket.on("join_room", (data) => {
-    // Get the current number of clients in the requested room
     const room = io.sockets.adapter.rooms.get(data.room);
-    const numClients = room ? room.size : 0;
+
+    // Ghost Cleanup: Check if this specific user already has a stale connection in the room
+    if (room) {
+      for (const existingSocketId of room) {
+        const existingSocket = io.sockets.sockets.get(existingSocketId);
+        if (existingSocket && existingSocket.userId === data.userId) {
+          console.log(`👻 Ghost detected for [${data.userId}]. Clearing stale connection.`);
+          // Force drop the ghost
+          existingSocket.disconnect(true);
+        }
+      }
+    }
+
+    const updatedRoom = io.sockets.adapter.rooms.get(data.room);
+    // Get the current number of clients in the room
+    const numClients = updatedRoom ? updatedRoom.size : 0;
 
     if (numClients >= 2) {
       console.log(`🚫 User [${data.userId}] rejected from full room: [${data.room}]`);
@@ -67,6 +81,8 @@ io.on("connection", (socket) => {
       return;
     }
 
+    // Tag socket with User ID and join the room
+    socket.userId = data.userId;
     socket.join(data.room);
     console.log(`👤 User [${data.userId}] joined room: [${data.room}] (Current occupants: ${numClients + 1})`);
 
@@ -74,7 +90,6 @@ io.on("connection", (socket) => {
     if (roomMessageCache[data.room]) {
       socket.emit("load_history", roomMessageCache[data.room]);
     }
-
   });
 
   // Handle incoming messages
