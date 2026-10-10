@@ -130,7 +130,10 @@ export function Chat() {
     // This tells the browser: "Connect to port 3000 on whatever IP address you are currently visiting"
     socketRef.current = io(`http://${window.location.hostname}:3000`);
 
-    socketRef.current.emit("join_room", { room: tempRoom, userId: tempID });
+    // Connect listener to handle both initial load and automatic reconnects
+    socketRef.current.on("connect", () => {
+      socketRef.current.emit("join_room", { room: tempRoom, userId: tempID });
+    });
 
     // Catch the "Room Full" event from the server
     socketRef.current.on("room_full", () => {
