@@ -57,7 +57,8 @@ export function Chat() {
   const getData = () => {
     var output = {
       ParticipantID: userID,
-      TimeStart: startTime,
+      // Format start time to human-readable date for the CSV output
+      TimeStart: new Date(startTime).toLocaleString(),
     };
     var headersTemp = [
       { label: "ParticipantID", key: "ParticipantID" },
@@ -65,7 +66,8 @@ export function Chat() {
     ];
 
     messages.forEach((mes) => {
-      output[`Time${mes.var}`] = mes.id;
+      // Format message time to human-readable date for the CSV output
+      output[`Time${mes.var}`] = new Date(mes.id).toLocaleString();
       output[mes.var] = mes.content.replace(/\"/g, '""');
       headersTemp = [
         ...headersTemp,
@@ -74,7 +76,8 @@ export function Chat() {
       ];
     });
 
-    output["TimeEnd"] = Date.now();
+    // Format end time to human-readable date for the CSV output
+    output["TimeEnd"] = new Date().toLocaleString();
     headersTemp = [...headersTemp, { label: "TimeEnd", key: "TimeEnd" }];
     setOutputMessages([output]);
     setHeaders(headersTemp);
