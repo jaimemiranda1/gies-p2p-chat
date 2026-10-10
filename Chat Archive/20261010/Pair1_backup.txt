@@ -3,3 +3,13 @@
 [10/10/2026, 2:00:26 PM] Room: Pair1 | User: User7851 | Message: Testing connection from User7851
 [10/10/2026, 2:00:52 PM] Room: Pair1 | User: User7852 | Message: Confirming connection by User7852
 [10/10/2026, 2:01:32 PM] Room: Pair1 | User: User7851 | Message: User7852 has been diconnected
+[10/10/2026, 4:27:28 PM] Room: Pair1 | User: User445 | Message: Testing the new CSV export. I'm sending the first message so, I will be assigned the Q identifier.
+[10/10/2026, 4:28:01 PM] Room: Pair1 | User: User445 | Message: Testing back-to-back messages from the same user. This should be Q2.
+[10/10/2026, 4:28:08 PM] Room: Pair1 | User: User8790 | Message: I'm A1
+[10/10/2026, 4:28:12 PM] Room: Pair1 | User: User8790 | Message: This is A2
+[10/10/2026, 4:28:16 PM] Room: Pair1 | User: User8790 | Message: And this should be A3
+[10/10/2026, 4:28:22 PM] Room: Pair1 | User: User445 | Message: Q3 has arrived
+[10/10/2026, 4:28:39 PM] Room: Pair1 | User: User8790 | Message: Now, A4
+[10/10/2026, 4:28:44 PM] Room: Pair1 | User: User8790 | Message: And another one, A5
+[10/10/2026, 4:28:56 PM] Room: Pair1 | User: User8790 | Message: And one last one because why not?
+[10/10/2026, 4:29:04 PM] Room: Pair1 | User: User445 | Message: Test completed!

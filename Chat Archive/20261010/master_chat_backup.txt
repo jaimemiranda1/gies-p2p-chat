@@ -17,3 +17,13 @@
 [10/10/2026, 2:06:12 PM] Room: Pair2 | User: User1111 | Message: Confirming User1111 did not receive the prior message nor this one
 [10/10/2026, 2:06:42 PM] Room: Pair2 | User: User1111 | Message: User1111 will now turn airplane mode off and verify if messages are lost or received on reconnection
 [10/10/2026, 2:07:05 PM] Room: Pair2 | User: User2222 | Message: Confirming that messages were successfully received upon reconnection
+[10/10/2026, 4:27:28 PM] Room: Pair1 | User: User445 | Message: Testing the new CSV export. I'm sending the first message so, I will be assigned the Q identifier.
+[10/10/2026, 4:28:01 PM] Room: Pair1 | User: User445 | Message: Testing back-to-back messages from the same user. This should be Q2.
+[10/10/2026, 4:28:08 PM] Room: Pair1 | User: User8790 | Message: I'm A1
+[10/10/2026, 4:28:12 PM] Room: Pair1 | User: User8790 | Message: This is A2
+[10/10/2026, 4:28:16 PM] Room: Pair1 | User: User8790 | Message: And this should be A3
+[10/10/2026, 4:28:22 PM] Room: Pair1 | User: User445 | Message: Q3 has arrived
+[10/10/2026, 4:28:39 PM] Room: Pair1 | User: User8790 | Message: Now, A4
+[10/10/2026, 4:28:44 PM] Room: Pair1 | User: User8790 | Message: And another one, A5
+[10/10/2026, 4:28:56 PM] Room: Pair1 | User: User8790 | Message: And one last one because why not?
+[10/10/2026, 4:29:04 PM] Room: Pair1 | User: User445 | Message: Test completed!
