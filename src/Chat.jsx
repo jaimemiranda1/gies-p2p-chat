@@ -47,11 +47,18 @@ export function Chat() {
   // Socket reference
   const socketRef = useRef(null);
 
-  // Generates Q1, A1, Q2, A2 based on message index to satisfy the Wide Format CSV
-  const getQAVar = (index) => {
-    const isQuestion = index % 2 === 0;
-    const number = Math.floor(index / 2) + 1;
-    return isQuestion ? `Q${number}` : `A${number}`;
+  // Dynamically assigns Q1, Q2, A1 based on who sent the very first message
+  const getDynamicQAVar = (senderId, currentMessages) => {
+    if (currentMessages.length === 0) return "Q1";
+
+    // The person who sent the first message is locked as the "Q" user
+    const qUserId = currentMessages[0].senderId;
+    const prefix = senderId === qUserId ? "Q" : "A";
+
+    // Count how many times this specific user has already spoken
+    const previousMessageCount = currentMessages.filter(msg => msg.senderId === senderId).length;
+    
+    return `${prefix}${previousMessageCount + 1}`;
   };
 
   const getData = () => {
@@ -142,24 +149,29 @@ export function Chat() {
 
     // Load missed messages from the server when joining
     socketRef.current.on("load_history", (historyArray) => {
-      // Map the server's raw data back into the Q1/A1 format the UI expects
-      const formattedHistory = historyArray.map((msg, index) => ({
-        role: msg.senderId === tempID ? "user" : "peer",
-        content: msg.message,
-        id: msg.timestamp,
-        var: getQAVar(index)
-      }));
+      const formattedHistory = [];
+      historyArray.forEach((msg) => {
+        const nextVar = getDynamicQAVar(msg.senderId, formattedHistory);
+        formattedHistory.push({
+          role: msg.senderId === tempID ? "user" : "peer",
+          content: msg.message,
+          id: msg.timestamp,
+          senderId: msg.senderId,
+          var: nextVar
+        });
+      });
       setMessages(formattedHistory);
     });
 
     // Listen for incoming messages
     socketRef.current.on("receive_message", (data) => {
       setMessages((prev) => {
-        const nextVar = getQAVar(prev.length);
+        const nextVar = getDynamicQAVar(data.senderId, prev);
         return [...prev, {
           role: "peer",
           content: data.message,
           id: data.timestamp,
+          senderId: data.senderId,
           var: nextVar
         }];
       });
@@ -181,12 +193,13 @@ export function Chat() {
     if (!messageText.trim()) return;
 
     const timestamp = Date.now();
-    const nextVar = getQAVar(messages.length);
+    const nextVar = getDynamicQAVar(userID, messages);
 
     const newMsg = {
       role: "user",
       content: messageText,
       id: timestamp,
+      senderId: userID,
       var: nextVar,
     };
 
